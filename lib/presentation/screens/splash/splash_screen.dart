@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/auth_provider.dart';
@@ -14,34 +15,38 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAuthState();
+    _initializeApp();
   }
 
-  Future<void> _checkAuthState() async {
-    await Future.delayed(const Duration(seconds: 2)); // Minimal splash display time
+  Future<void> _initializeApp() async {
+    // Simulate minimum splash screen time
+    await Future.delayed(const Duration(seconds: 2));
+  }
 
-    if (!mounted) return;
-
+  @override
+  Widget build(BuildContext context) {
+    // Listen to auth state changes in the build method
     ref.listen(authStateProvider, (previous, next) {
       next.whenData((user) {
         if (user != null) {
-          AppRoutes.navigateToHome(context);
+          if (!user.emailVerified) {
+            AppRoutes.navigateToVerifyEmail(context);
+          } else {
+            AppRoutes.navigateToHome(context);
+          }
         } else {
           AppRoutes.navigateToLogin(context);
         }
       });
     });
-  }
 
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // App Logo/Icon
+            // App Logo
             Icon(
               Icons.mosque,
               size: 80,
@@ -57,7 +62,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               ),
             ),
             const SizedBox(height: 48),
-            // Loading Indicator
+            // Loading indicator
             CircularProgressIndicator(
               color: Theme.of(context).colorScheme.onPrimary,
             ),

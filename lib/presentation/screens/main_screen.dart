@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../favorites/favorites_screen.dart';
 import 'home/home_screen.dart';
 import 'search/search_screen.dart';
@@ -14,17 +15,24 @@ class MainScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(currentIndexProvider);
 
-    final screens = [
-      const HomeScreen(),
-      const SearchScreen(),
-      const FavoritesScreen(),
-      const ProfileScreen(),
-    ];
-
     return Scaffold(
       body: IndexedStack(
         index: currentIndex,
-        children: screens,
+        children: [
+          const HomeScreen(),
+          const SearchScreen(),
+          FutureBuilder<SharedPreferences>(
+            future: SharedPreferences.getInstance(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return const FavoritesScreen();
+              } else {
+                return const Center(child: CircularProgressIndicator());
+              }
+            },
+          ),
+          const ProfileScreen(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,

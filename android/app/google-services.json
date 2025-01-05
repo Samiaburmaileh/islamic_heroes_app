@@ -9,10 +9,14 @@
       "client_info": {
         "mobilesdk_app_id": "1:833831555627:android:01bc5dc273357ad280906e",
         "android_client_info": {
-          "package_name": "com.android.application"
-        }
+          "package_name": "com.example.islamic_heroes_app"        }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "833831555627-gdr8n74pct5nb8hq8u4mqdl94medq99g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDHwDRD5Y0CT1O8vTLMNu8kk61IgtN4gPY"
@@ -20,7 +24,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "833831555627-gdr8n74pct5nb8hq8u4mqdl94medq99g.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "833831555627-rorton2ckof2vqv2orisgv8rbcnsd15k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.islamicHeroesApp"
+              }
+            }
+          ]
         }
       }
     }

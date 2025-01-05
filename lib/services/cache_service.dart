@@ -1,47 +1,110 @@
+// lib/services/cache_service.dart
+
 import 'package:hive_flutter/hive_flutter.dart';
 import '../data/models/hero_model.dart';
 
 class CacheService {
-  static const String heroesBoxName = 'heroes';
-  static const String lastUpdateKey = 'last_update';
+  static final CacheService _instance = CacheService._internal();
+
+  factory CacheService() => _instance;
+
+  CacheService._internal();
+
   late Box<IslamicHero> _heroesBox;
-  late Box<dynamic> _metaBox;
+  bool _isInitialized = false;
 
   Future<void> init() async {
-    await Hive.initFlutter();
+    if (!_isInitialized) {
+      await Hive.initFlutter();
 
-    if (!Hive.isAdapterRegistered(0)) {
-      Hive.registerAdapter(IslamicHeroAdapter());
+      if (!Hive.isAdapterRegistered(0)) {
+        Hive.registerAdapter(IslamicHeroAdapter());
+      }
+
+      _heroesBox = await Hive.openBox<IslamicHero>('heroes');
+      _isInitialized = true;
     }
-
-    _heroesBox = await Hive.openBox<IslamicHero>(heroesBoxName);
-    _metaBox = await Hive.openBox('meta');
   }
 
-  Future<void> cacheHeroes(List<IslamicHero> heroes) async {
-    await _heroesBox.clear();
-    final heroesMap = {for (var hero in heroes) hero.id: hero};
-    await _heroesBox.putAll(heroesMap);
-    await _metaBox.put(lastUpdateKey, DateTime.now().toIso8601String());
+  Future<void> ensureInitialized() async {
+    if (!_isInitialized) {
+      await init();
+    }
   }
 
-  List<IslamicHero> getCachedHeroes() {
+  bool get hasData {
+    if (!_isInitialized) return false;
+    return _heroesBox.isNotEmpty;
+  }
+
+  Future<List<IslamicHero>> getHeroes() async {
+    await ensureInitialized();
     return _heroesBox.values.toList();
   }
 
-  IslamicHero? getCachedHeroById(String id) {
+  Future<IslamicHero?> getHeroById(String id) async {
+    await ensureInitialized();
     return _heroesBox.get(id);
   }
 
-  DateTime? getLastUpdate() {
-    final lastUpdate = _metaBox.get(lastUpdateKey);
-    return lastUpdate != null ? DateTime.parse(lastUpdate) : null;
+  Future<void> saveHero(IslamicHero hero) async {
+    await ensureInitialized();
+    await _heroesBox.put(hero.id, hero);
+  }
+
+  Future<void> saveHeroes(List<IslamicHero> heroes) async {
+    await ensureInitialized();
+    final Map<String, IslamicHero> heroMap = {
+      for (var hero in heroes) hero.id: hero
+    };
+    await _heroesBox.putAll(heroMap);
+  }
+
+  Future<void> deleteHero(String id) async {
+    await ensureInitialized();
+    await _heroesBox.delete(id);
   }
 
   Future<void> clearCache() async {
+    await ensureInitialized();
     await _heroesBox.clear();
-    await _metaBox.delete(lastUpdateKey);
   }
 
-  bool get hasCachedData => _heroesBox.isNotEmpty;
+  Future<void> dispose() async {
+    if (_isInitialized) {
+      await _heroesBox.close();
+      _isInitialized = false;
+    }
+  }
+
+  // Search functionality
+  Future<List<IslamicHero>> searchHeroes(String query) async {
+    await ensureInitialized();
+    if (query.isEmpty) return getHeroes();
+
+    final heroes = await getHeroes();
+    query = query.toLowerCase();
+
+    return heroes.where((hero) {
+      return hero.name.toLowerCase().contains(query) ||
+          hero.era.toLowerCase().contains(query) ||
+          hero.biography.toLowerCase().contains(query) ||
+          hero.achievements.any((achievement) =>
+              achievement.toLowerCase().contains(query));
+    }).toList();
+  }
+
+  // Get heroes by era
+  Future<List<IslamicHero>> getHeroesByEra(String era) async {
+    await ensureInitialized();
+    final heroes = await getHeroes();
+    return heroes.where((hero) => hero.era == era).toList();
+  }
+
+  // Get all unique eras
+  Future<List<String>> getAllEras() async {
+    await ensureInitialized();
+    final heroes = await getHeroes();
+    return heroes.map((hero) => hero.era).toSet().toList();
+  }
 }

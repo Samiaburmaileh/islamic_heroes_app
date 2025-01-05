@@ -64,6 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '833831555627',
     projectId: 'islamic-heroes-app',
     storageBucket: 'islamic-heroes-app.firebasestorage.app',
+    iosClientId: '833831555627-rorton2ckof2vqv2orisgv8rbcnsd15k.apps.googleusercontent.com',
     iosBundleId: 'com.example.islamicHeroesApp',
   );
 
@@ -73,6 +74,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '833831555627',
     projectId: 'islamic-heroes-app',
     storageBucket: 'islamic-heroes-app.firebasestorage.app',
+    iosClientId: '833831555627-rorton2ckof2vqv2orisgv8rbcnsd15k.apps.googleusercontent.com',
     iosBundleId: 'com.example.islamicHeroesApp',
   );
 
@@ -85,4 +87,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'islamic-heroes-app.firebasestorage.app',
     measurementId: 'G-1FD17MKM0F',
   );
+
 }

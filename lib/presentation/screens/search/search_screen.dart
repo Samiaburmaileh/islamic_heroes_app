@@ -1,16 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/search_provider.dart';
 import '../../providers/hero_provider.dart';
 import '../../widgets/hero_card.dart';
+import '../../widgets/loading_widget.dart';
+import '../../widgets/app_error_widget.dart';
+import '../../widgets/empty_state_widget.dart';
 
-final searchQueryProvider = StateProvider<String>((ref) => '');
-final selectedEraProvider = StateProvider<String?>((ref) => null);
-
-class SearchScreen extends ConsumerWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends ConsumerState<SearchScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final heroesAsync = ref.watch(heroesStreamProvider);
     final searchQuery = ref.watch(searchQueryProvider);
     final selectedEra = ref.watch(selectedEraProvider);
@@ -18,6 +32,7 @@ class SearchScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: TextField(
+          controller: _searchController,
           decoration: InputDecoration(
             hintText: 'Search heroes...',
             border: InputBorder.none,
@@ -32,32 +47,67 @@ class SearchScreen extends ConsumerWidget {
             ref.read(searchQueryProvider.notifier).state = value;
           },
         ),
+        actions: [
+          if (_searchController.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                _searchController.clear();
+                ref.read(searchQueryProvider.notifier).state = '';
+              },
+            ),
+        ],
       ),
       body: heroesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(context, error),
+        loading: () => const LoadingWidget(),
+        error: (error, stack) => AppErrorWidget(
+          message: error.toString(),
+          onRetry: () => ref.refresh(heroesStreamProvider),
+        ),
         data: (heroes) {
-          final filteredHeroes = heroes.where((hero) {
-            final matchesQuery = hero.name.toLowerCase().contains(
-              searchQuery.toLowerCase(),
-            ) ||
-                hero.biography.toLowerCase().contains(
-                  searchQuery.toLowerCase(),
-                );
+          if (searchQuery.isEmpty) {
+            return _buildEmptySearch();
+          }
 
-            final matchesEra =
-                selectedEra == null || hero.era == selectedEra;
+          if (heroes.isNotEmpty) {
+            _buildEraFilter(heroes);
+          }
 
-            return matchesQuery && matchesEra;
-          }).toList();
+          final filteredHeroes = _getFilteredHeroes(heroes, searchQuery, selectedEra);
+
+          if (filteredHeroes.isEmpty) {
+            return const EmptyStateWidget(
+              title: 'No Results',
+              message: 'Try adjusting your search or filters',
+              icon: Icons.search_off,
+            );
+          }
 
           return Column(
             children: [
-              if (heroes.isNotEmpty) _buildEraFilter(context, ref, heroes),
+              if (heroes.isNotEmpty) _buildEraFilter(heroes),
               Expanded(
-                child: filteredHeroes.isEmpty
-                    ? _buildEmptyState(context)
-                    : _buildSearchResults(context, filteredHeroes),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filteredHeroes.length,
+                  itemBuilder: (context, index) {
+                    final hero = filteredHeroes[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: HeroCard(
+                        hero: hero,
+                        uniqueTag: 'search_$index',
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/hero-details',
+                            arguments: hero,
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           );
@@ -66,11 +116,24 @@ class SearchScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEraFilter(
-      BuildContext context,
-      WidgetRef ref,
-      List<dynamic> heroes,
-      ) {
+  Widget _buildEmptySearch() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search,
+            size: 64,
+            color: Colors.grey,
+          ),
+          SizedBox(height: 16),
+          Text('Start typing to search heroes'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEraFilter(List<dynamic> heroes) {
     final eras = heroes.map((hero) => hero.era).toSet().toList();
     final selectedEra = ref.watch(selectedEraProvider);
 
@@ -80,7 +143,7 @@ class SearchScreen extends ConsumerWidget {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        itemCount: eras.length + 1, // +1 for "All" chip
+        itemCount: eras.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
             return Padding(
@@ -102,8 +165,7 @@ class SearchScreen extends ConsumerWidget {
               label: Text(era),
               selected: selectedEra == era,
               onSelected: (selected) {
-                ref.read(selectedEraProvider.notifier).state =
-                selected ? era : null;
+                ref.read(selectedEraProvider.notifier).state = selected ? era : null;
               },
             ),
           );
@@ -112,76 +174,14 @@ class SearchScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSearchResults(BuildContext context, List<dynamic> heroes) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: heroes.length,
-      itemBuilder: (context, index) {
-        final hero = heroes[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: HeroCard(
-            hero: hero,
-            onTap: () {
-              Navigator.pushNamed(
-                context,
-                '/hero-details',
-                arguments: hero,
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
+  List<dynamic> _getFilteredHeroes(List<dynamic> heroes, String query, String? era) {
+    return heroes.where((hero) {
+      final matchesQuery = hero.name.toLowerCase().contains(query.toLowerCase()) ||
+          hero.biography.toLowerCase().contains(query.toLowerCase());
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.search_off,
-            size: 64,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No Results Found',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Try adjusting your search or filters',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
+      final matchesEra = era == null || hero.era == era;
 
-  Widget _buildErrorState(BuildContext context, Object error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.error_outline,
-            size: 48,
-            color: Colors.red,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Error loading data',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error.toString(),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+      return matchesQuery && matchesEra;
+    }).toList();
   }
 }

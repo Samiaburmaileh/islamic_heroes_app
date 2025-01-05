@@ -26,18 +26,15 @@ class IslamicHeroAdapter extends TypeAdapter<IslamicHero> {
       birthDate: fields[6] as String?,
       deathDate: fields[7] as String?,
       birthPlace: fields[8] as String?,
-      contributions: (fields[9] as List?)?.cast<String>(),
-      famousQuotes: (fields[10] as List?)?.cast<String>(),
-      historicalEvents: (fields[11] as List?)?.cast<String>(),
-      familyRelations: (fields[12] as Map?)?.cast<String, String>(),
-      books: (fields[13] as List?)?.cast<String>(),
+      famousQuotes: (fields[9] as List?)?.cast<String>(),
+      books: (fields[10] as List?)?.cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, IslamicHero obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -57,14 +54,8 @@ class IslamicHeroAdapter extends TypeAdapter<IslamicHero> {
       ..writeByte(8)
       ..write(obj.birthPlace)
       ..writeByte(9)
-      ..write(obj.contributions)
-      ..writeByte(10)
       ..write(obj.famousQuotes)
-      ..writeByte(11)
-      ..write(obj.historicalEvents)
-      ..writeByte(12)
-      ..write(obj.familyRelations)
-      ..writeByte(13)
+      ..writeByte(10)
       ..write(obj.books);
   }
 

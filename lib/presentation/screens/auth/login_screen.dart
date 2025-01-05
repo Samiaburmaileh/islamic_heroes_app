@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/translation_helper.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../widgets/loading_widget.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +16,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
@@ -22,16 +26,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _signInWithEmail() async {
+  Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+
     try {
-      final authService = ref.read(authServiceProvider);
-      await authService.signInWithEmail(
-        _emailController.text,
-        _passwordController.text,
+      await ref.read(authServiceProvider).signInWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
+
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/home');
       }
@@ -50,9 +55,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
+
     try {
-      final authService = ref.read(authServiceProvider);
-      await authService.signInWithGoogle();
+      await ref.read(authServiceProvider).signInWithGoogle();
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/home');
       }
@@ -73,89 +78,133 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Center(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Islamic Heroes',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
-                            }
-                            return null;
-                          },
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App Logo
+                Icon(
+                  Icons.mosque,
+                  size: 80,
+                  color: Theme.of(context).primaryColor,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Welcome Back',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sign in to continue',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 32),
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: tr(context, ref, 'email'),
+                          prefixIcon: Icon(Icons.email_outlined),
+                          border: OutlineInputBorder(),
                         ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Password',
-                            border: OutlineInputBorder(),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                        enabled: !_isLoading,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: tr(context, ref, 'password'),
+                          prefixIcon: const Icon(Icons.lock_outlined),
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
-                            }
-                            return null;
-                          },
                         ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _signInWithEmail,
-                            child: _isLoading
-                                ? const CircularProgressIndicator()
-                                : const Text('Sign In'),
-                          ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          return null;
+                        },
+                        enabled: !_isLoading,
+                      ),
+                      const SizedBox(height: 24),
+                      if (_isLoading)
+                        const LoadingWidget()
+                      else
+                        Column(
+                          children: [
+                            ElevatedButton(
+                              onPressed: _signIn,
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(50),
+                              ),
+                              child: Text(tr(context, ref, 'signIn')),
+                            ),
+                            const SizedBox(height: 16),
+                            OutlinedButton(
+                              onPressed: _signInWithGoogle,
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(50),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Image.asset(
+                                    'assets/google_logo.png',
+                                    height: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text('Sign in with Google'),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Don't have an account?"),
+                    TextButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                        Navigator.pushNamed(context, '/register');
+                      },
+                      child:  Text(tr(context, ref, 'register')),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('OR'),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: _isLoading ? null : _signInWithGoogle,
-                      icon: const Icon(Icons.g_mobiledata),
-                      label: const Text('Sign in with Google'),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/register');
-                    },
-                    child: const Text('Don\'t have an account? Register'),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),

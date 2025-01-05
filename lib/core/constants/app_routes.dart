@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../data/models/hero_model.dart';
 import '../../presentation/screens/auth/register_screen.dart';
+import '../../presentation/screens/auth/verify_email_screen.dart';
 import '../../presentation/screens/hero_details/hero_details_screen.dart';
-import '../../presentation/screens/home/home_screen.dart';
 import '../../presentation/screens/main_screen.dart';
-import '../../presentation/screens/settings/settings_screen.dart';
+import '../../presentation/screens/profile/edit_profile_screen.dart';
+import '../../presentation/screens/reading_history/reading_history_screen.dart';
 import '../../presentation/screens/splash/splash_screen.dart';
 import '../../presentation/screens/search/search_screen.dart';
 import '../../presentation/screens/auth/login_screen.dart';
+import '../../presentation/screens/settings/settings_screen.dart';
 
 class AppRoutes {
   // Route names
@@ -18,21 +20,23 @@ class AppRoutes {
   static const String login = '/login';
   static const String register = '/register';
   static const String settings = '/settings';
-
+  static const String verifyEmail = '/verify-email';
+  static const String readingHistory = '/reading-history';
+  static const String editProfile = '/edit-profile';
   // Route generator
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case initial:
+      case '/':
         return MaterialPageRoute(
           builder: (_) => const SplashScreen(),
         );
 
-      case home:
+      case '/home':
         return MaterialPageRoute(
           builder: (_) => const MainScreen(),
         );
 
-      case heroDetails:
+      case '/hero-details':
         if (settings.arguments is! IslamicHero) {
           return _errorRoute('Hero data is required');
         }
@@ -41,32 +45,46 @@ class AppRoutes {
           builder: (_) => HeroDetailsScreen(hero: hero),
         );
 
-      case search:
+      case editProfile:
+        return MaterialPageRoute(
+          builder: (_) => const EditProfileScreen(),
+        );
+
+      case '/search':
         return MaterialPageRoute(
           builder: (_) => const SearchScreen(),
         );
 
-      case login:
+      case readingHistory:
+        return MaterialPageRoute(
+          builder: (_) => const ReadingHistoryScreen(),
+        );
+
+      case '/login':
         return MaterialPageRoute(
           builder: (_) => const LoginScreen(),
         );
 
-      case register:
+      case '/register':
         return MaterialPageRoute(
           builder: (_) => const RegisterScreen(),
         );
 
-    //  case settings:
-    //    return MaterialPageRoute(
-    //      builder: (_) => const SettingsScreen(),
-    //    );
+      case '/settings':
+        return MaterialPageRoute(
+          builder: (_) => const SettingsScreen(),
+        );
+
+      case '/verify-email':
+        return MaterialPageRoute(
+          builder: (_) => const VerifyEmailScreen(),
+        );
 
       default:
         return _errorRoute('Route not found');
     }
   }
 
-  // Error route
   static Route<dynamic> _errorRoute(String message) {
     return MaterialPageRoute(
       builder: (_) => Scaffold(
@@ -103,6 +121,14 @@ class AppRoutes {
     await Navigator.pushNamedAndRemoveUntil(
       context,
       home,
+          (route) => false,
+    );
+  }
+
+  static Future<void> navigateToVerifyEmail(BuildContext context) async {
+    await Navigator.pushNamedAndRemoveUntil(
+      context,
+      verifyEmail,
           (route) => false,
     );
   }
@@ -152,5 +178,4 @@ class AppRoutes {
       ),
     );
   }
-
 }

@@ -51,5 +51,18 @@
         <string>tel</string>
         <string>mailto</string>
     </array>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>We need access to photo library for profile picture selection</string>
+    <key>NSCameraUsageDescription</key>
+    <string>We need access to camera for profile picture capture</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.YOUR-CLIENT-ID</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>

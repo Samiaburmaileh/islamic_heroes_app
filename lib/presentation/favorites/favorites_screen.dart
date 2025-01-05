@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../providers/favorites_provider.dart';
 import '../providers/hero_provider.dart';
 import '../widgets/hero_card.dart';
@@ -135,9 +134,11 @@ class FavoritesScreen extends ConsumerWidget {
             );
           },
           child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),child: Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: HeroCard(
               hero: hero,
+              uniqueTag: 'favorite_$index',  // Add uniqueTag
               onTap: () {
                 Navigator.pushNamed(
                   context,
@@ -146,6 +147,7 @@ class FavoritesScreen extends ConsumerWidget {
                 );
               },
             ),
+          ),
           ),
         );
       },
